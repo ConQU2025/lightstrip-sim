@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<robot name="led_robot">
+
+  <!-- 主长方体主体 -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="10"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.8 0.8 1.5"/>  <!-- x y z 尺寸 -->
+      </geometry>
+      <material name="dark_gray">
+        <color rgba="0.2 0.2 0.2 1"/>
+      </material>
+    </visual>
+    
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.8 0.8 1.5"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- 左侧灯条 -->
+  <link name="left_light">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.06 0.006 0.5"/>  <!-- 细长灯条 -->
+      </geometry>
+      <material name="left_light_color"/>  <!-- 可修改颜色 -->
+    </visual>
+  </link>
+
+  <joint name="left_light_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="left_light"/>
+    <origin xyz="0.37 -0.403 0" rpy="0 0 0"/>  <!-- 定位在正面左侧 -->
+  </joint>
+
+  <!-- 右侧灯条 -->
+  <link name="right_light">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.06 0.006 0.5"/>  <!-- 细长灯条 -->
+      </geometry>
+      <material name="right_light_color"/>  <!-- 可修改颜色 -->
+    </visual>
+  </link>
+
+  <joint name="right_light_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="right_light"/>
+    <origin xyz="-0.37 -0.403 0" rpy="0 0 0"/>  <!-- 定位在正面右侧 -->
+  </joint>
+
+  <!-- 默认灯条颜色 -->
+  <material name="left_light_color">
+    <color rgba="1 0 1 1"/>  <!-- 默认红色 -->
+  </material>
+  
+  <material name="right_light_color">
+    <color rgba="1 0 1 1"/>  <!-- 默认绿色 -->
+  </material>
+
+  <!-- ===== GAZEBO 特定配置 ===== -->
+  <!-- 主体材质 -->
+  <gazebo reference="base_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <!-- 左侧灯条材质 -->
+  <gazebo reference="left_light">
+    <material>Gazebo/Purple</material>
+    <selfCollide>false</selfCollide>
+    <turnGravityOff>false</turnGravityOff>
+  </gazebo>
+
+  <!-- 右侧灯条材质 -->
+  <gazebo reference="right_light">
+    <material>Gazebo/Purple</material>
+    <selfCollide>false</selfCollide>
+    <turnGravityOff>false</turnGravityOff>
+  </gazebo>
+  
+  <!-- 自定义发光材质（可选） -->
+  <gazebo>
+    <material name="GlowingRed">
+      <ambient>1.0 0.0 0.0 1.0</ambient>
+      <diffuse>1.0 0.0 0.0 1.0</diffuse>
+      <specular>0.5 0.5 0.5 1.0</specular>
+      <emissive>1.0 0.0 0.0 1.0</emissive>
+    </material>
+    <material name="GlowingGreen">
+      <ambient>0.0 1.0 0.0 1.0</ambient>
+      <diffuse>0.0 1.0 0.0 1.0</diffuse>
+      <specular>0.5 0.5 0.5 1.0</specular>
+      <emissive>0.0 1.0 0.0 1.0</emissive>
+    </material>
+    <material name="GlowingPurple">
+      <ambient>1.0 0.0 1.0 1.0</ambient>
+      <diffuse>1.0 0.0 1.0 1.0</diffuse>
+      <specular>0.5 0.5 0.5 1.0</specular>
+      <emissive>1.0 0.0 1.0 1.0</emissive>
+    </material>
+  </gazebo>
+
+</robot>
