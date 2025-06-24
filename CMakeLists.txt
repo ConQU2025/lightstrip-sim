@@ -12,6 +12,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   std_msgs
+  geometry_msgs
+  tf2
+  tf2_geometry_msgs
 )
 
 find_package(OpenCV REQUIRED)
@@ -108,8 +111,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES conqu_localization
-#  CATKIN_DEPENDS cv_bridge roscpp sensor_msga std_msgs
+#  LIBRARIES conqu_lightstrip_sim
+  CATKIN_DEPENDS cv_bridge roscpp sensor_msgs std_msgs geometry_msgs tf2 tf2_geometry_msgs
 #  DEPENDS system_lib
 )
 
