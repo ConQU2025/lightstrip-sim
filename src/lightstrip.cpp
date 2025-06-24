@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/calib3d.hpp>
@@ -199,8 +200,8 @@ void imgCallback(const sensor_msgs::ImageConstPtr &msg)
                 pose_pub.publish(pose_msg);
                 
                 // 在图像上显示位姿信息
-                string pose_text = "Pos: (" + to_string(tvec[0]) + ", " + to_string(tvec[1]) + ", " + to_string(tvec[2]) + ")";
-                cv::putText(result_image, pose_text, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 255), 2);
+                // string pose_text = "Pos: (" + to_string(tvec[0]) + ", " + to_string(tvec[1]) + ", " + to_string(tvec[2]) + ")";
+                // cv::putText(result_image, pose_text, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 255), 2);
                 
                 // 绘制坐标轴
                 vector<cv::Point3f> axis_points;
@@ -237,34 +238,72 @@ void imgCallback(const sensor_msgs::ImageConstPtr &msg)
     cv::waitKey(1);
 }
 
+bool loadCameraInfoOnce(const string& camera_info_topic) {
+    ROS_INFO("Waiting for camera_info from %s...", camera_info_topic.c_str());
+    
+    sensor_msgs::CameraInfo::ConstPtr camera_info = 
+        ros::topic::waitForMessage<sensor_msgs::CameraInfo>(camera_info_topic, ros::Duration(10.0));
+    
+    if (camera_info) {
+        // 提取相机内参
+        camera_matrix = (cv::Mat_<double>(3, 3) << 
+            camera_info->K[0], camera_info->K[1], camera_info->K[2],
+            camera_info->K[3], camera_info->K[4], camera_info->K[5],
+            camera_info->K[6], camera_info->K[7], camera_info->K[8]);
+        
+        // 提取畸变系数
+        dist_coeffs = cv::Mat::zeros(5, 1, CV_64F);
+        for (size_t i = 0; i < min(camera_info->D.size(), (size_t)5); i++) {
+            dist_coeffs.at<double>(i) = camera_info->D[i];
+        }
+        
+        ROS_INFO("Successfully loaded camera parameters from camera_info");
+        return true;
+    } else {
+        ROS_ERROR("Failed to receive camera_info within timeout");
+        return false;
+    }
+}
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "lightstrip");
     ros::NodeHandle nh("~");
 
     ROS_INFO("Starting lightstrip node...");
 
-    // 初始化相机参数
-    double fx, fy, cx, cy;
-    vector<double> dist_coeffs_vec;
-    nh.param<double>("camera_fx", fx, 800.0);  // 焦距x
-    nh.param<double>("camera_fy", fy, 800.0);  // 焦距y
-    nh.param<double>("camera_cx", cx, 320.0);  // 主点x
-    nh.param<double>("camera_cy", cy, 240.0);  // 主点y
-    nh.param<vector<double>>("dist_coeffs", dist_coeffs_vec, vector<double>{0.0, 0.0, 0.0, 0.0, 0.0});
-    
-    // 构建相机内参矩阵
-    camera_matrix = (cv::Mat_<double>(3, 3) << 
-        fx, 0, cx,
-        0, fy, cy,
-        0, 0, 1);
-    
-    // 构建畸变系数矩阵
-    dist_coeffs = cv::Mat::zeros(5, 1, CV_64F);
-    for (size_t i = 0; i < min(dist_coeffs_vec.size(), (size_t)5); i++) {
-        dist_coeffs.at<double>(i) = dist_coeffs_vec[i];
+    // 尝试自动获取相机参数
+    if (!loadCameraInfoOnce("/r2/cam_r2/camera_info")) {
+        ROS_WARN("Could not get camera_info, using default parameters");
+        // 使用默认参数作为回退
+        camera_matrix = (cv::Mat_<double>(3, 3) << 
+            800.0, 0, 320.0,
+            0, 800.0, 240.0,
+            0, 0, 1);
+        dist_coeffs = cv::Mat::zeros(5, 1, CV_64F);
     }
+
+    // // 初始化相机参数
+    // double fx, fy, cx, cy;
+    // vector<double> dist_coeffs_vec;
+    // nh.param<double>("camera_fx", fx, 800.0);  // 焦距x
+    // nh.param<double>("camera_fy", fy, 800.0);  // 焦距y
+    // nh.param<double>("camera_cx", cx, 320.0);  // 主点x
+    // nh.param<double>("camera_cy", cy, 240.0);  // 主点y
+    // nh.param<vector<double>>("dist_coeffs", dist_coeffs_vec, vector<double>{0.0, 0.0, 0.0, 0.0, 0.0});
     
-    ROS_INFO("Camera parameters - fx: %.1f, fy: %.1f, cx: %.1f, cy: %.1f", fx, fy, cx, cy);
+    // // 构建相机内参矩阵
+    // camera_matrix = (cv::Mat_<double>(3, 3) << 
+    //     fx, 0, cx,
+    //     0, fy, cy,
+    //     0, 0, 1);
+    
+    // // 构建畸变系数矩阵
+    // dist_coeffs = cv::Mat::zeros(5, 1, CV_64F);
+    // for (size_t i = 0; i < min(dist_coeffs_vec.size(), (size_t)5); i++) {
+    //     dist_coeffs.at<double>(i) = dist_coeffs_vec[i];
+    // }
+    
+    // ROS_INFO("Camera parameters - fx: %.1f, fy: %.1f, cx: %.1f, cy: %.1f", fx, fy, cx, cy);
     
     // 初始化灯条3D模型
     double lightstrip_width, lightstrip_height;
